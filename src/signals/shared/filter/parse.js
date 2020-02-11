@@ -2,6 +2,7 @@ import clonedeep from 'lodash.clonedeep';
 import moment from 'moment';
 
 const arrayFields = [
+  'priority',
   'stadsdeel',
   'maincategory_slug',
   'status',
@@ -20,48 +21,51 @@ const arrayFields = [
  * @returns {Object}
  */
 export const parseOutputFormData = options =>
-  Object.entries(options).reduce((acc, [key, value]) => {
-    let entryValue;
+  Object.entries(options)
+    // filter out empty values
+    .filter(([, value]) => value && value.length)
+    .reduce((acc, [key, value]) => {
+      let entryValue;
 
-    switch (key) {
-      case 'category_slug':
-      case 'maincategory_slug':
-        entryValue = value.map(({ slug }) => slug);
-        break;
+      switch (key) {
+        case 'category_slug':
+        case 'maincategory_slug':
+          entryValue = value.map(({ slug }) => slug);
+          break;
 
-      case 'stadsdeel':
-      case 'source':
-      case 'status':
-      case 'priority':
-        entryValue = value.map(({ key: itemKey }) => itemKey);
-        break;
+        case 'stadsdeel':
+        case 'source':
+        case 'status':
+        case 'priority':
+          entryValue = value.map(({ key: itemKey }) => itemKey);
+          break;
 
-      case 'created_after':
-        if (
-          moment(options.created_after, 'YYYY-MM-DD').toISOString() !== null
-        ) {
-          entryValue = moment(options.created_after).format(
-            'YYYY-MM-DDT00:00:00'
-          );
-        }
-        break;
+        case 'created_after':
+          if (
+            moment(options.created_after, 'YYYY-MM-DD').toISOString() !== null
+          ) {
+            entryValue = moment(options.created_after).format(
+              'YYYY-MM-DDT00:00:00'
+            );
+          }
+          break;
 
-      case 'created_before':
-        if (
-          moment(options.created_before, 'YYYY-MM-DD').toISOString() !== null
-        ) {
-          entryValue = moment(options.created_before)
-            .set({ hours: 23, minutes: 59, seconds: 59 })
-            .format('YYYY-MM-DDTkk:mm:ss');
-        }
-        break;
+        case 'created_before':
+          if (
+            moment(options.created_before, 'YYYY-MM-DD').toISOString() !== null
+          ) {
+            entryValue = moment(options.created_before)
+              .set({ hours: 23, minutes: 59, seconds: 59 })
+              .format('YYYY-MM-DDTkk:mm:ss');
+          }
+          break;
 
-      default:
-        entryValue = value;
-    }
+        default:
+          entryValue = value;
+      }
 
-    return { ...acc, [key]: entryValue };
-  }, {});
+      return { ...acc, [key]: entryValue };
+    }, {});
 
 /**
  * Formats filter data so that the form can consume it
