@@ -67,12 +67,33 @@ describe('signals/shared/parse', () => {
 
     it('should not format invalid date values', () => {
       const formState = {
-        created_before: null,
-        created_after: 'this is not a date',
+        created_before: 'this is not a date',
+        created_after: 'also not a date',
       };
       const expected = {
         created_before: undefined,
         created_after: undefined,
+      };
+
+      const parsedOutput = parseOutputFormData(formState);
+
+      expect(parsedOutput).toEqual(expected);
+    });
+
+    it('should filter out empty values', () => {
+      const mainCategories = categories.main.filter(
+        ({ slug }) =>
+          slug === 'afval' || slug === 'wegen-verkeer-straatmeubilair'
+      );
+
+      const formState = {
+        maincategory_slug: mainCategories,
+        stadsdeel: [],
+        priority: [],
+      };
+
+      const expected = {
+        maincategory_slug: mainCategories.map(({ slug }) => slug),
       };
 
       const parsedOutput = parseOutputFormData(formState);

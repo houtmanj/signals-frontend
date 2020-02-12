@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, wait, cleanup } from '@testing-library/react';
 import 'jest-styled-components';
 import cloneDeep from 'lodash.clonedeep';
 
@@ -225,7 +225,7 @@ describe('signals/incident-management/components/CheckboxList', () => {
     expect(getByText(toggleNothingLabel)).toBeInTheDocument();
   });
 
-  it('should set toggled when all boxes are checked', async () => {
+  it('should set toggled when all boxes are checked', () => {
     const groupId = 'barbazbaz';
     const toggleAllLabel = 'Select all';
     const toggleNothingLabel = 'Select none';
@@ -431,5 +431,113 @@ describe('signals/incident-management/components/CheckboxList', () => {
     container.querySelectorAll('input[type="checkbox"]').forEach(element => {
       expect(keys.includes(element.value));
     });
+  });
+
+  it('should call onChange callback', () => {
+    const onChange = jest.fn();
+
+    const { container } = render(
+      withAppContext(
+        <CheckboxList name="status" options={statuses} onChange={onChange} />
+      )
+    );
+
+    const randomOption = Math.floor(Math.random() * statuses.length);
+    const randomCheckbox = container.querySelectorAll('input[type="checkbox"]')[
+      randomOption
+    ];
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    act(() => {
+      fireEvent.click(randomCheckbox);
+    });
+
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('should call onChange callback when onToggle is omitted', () => {
+    const onChange = jest.fn();
+    const onToggle = jest.fn();
+
+    const { container } = render(
+      withAppContext(
+        <CheckboxList
+          name="status"
+          hasToggle
+          options={statuses}
+          onChange={onChange}
+        />
+      )
+    );
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    const nodeList = container.querySelectorAll('input[type="checkbox"]');
+
+    for (const checkbox of nodeList.values()) {
+      act(() => {
+        fireEvent.click(checkbox);
+      });
+    }
+
+    expect(onChange).toHaveBeenCalledTimes(nodeList.length);
+
+    cleanup();
+
+    onChange.mockReset();
+
+    const { container: container2 } = render(
+      withAppContext(
+        <CheckboxList
+          name="status"
+          hasToggle
+          options={statuses}
+          onChange={onChange}
+          onToggle={onToggle}
+        />
+      )
+    );
+
+
+    expect(onToggle).not.toHaveBeenCalled();
+
+    const nodeList2 = container2.querySelectorAll('input[type="checkbox"]');
+
+    for (const checkbox of nodeList2.values()) {
+      act(() => {
+        fireEvent.click(checkbox);
+      });
+    }
+
+    expect(onChange).toHaveBeenCalledTimes(nodeList2.length - 1);
+    expect(onToggle).toHaveBeenCalled();
+  });
+
+  it('should call onToggle callback', async () => {
+    const toggleAllLabel = 'Click here to select all';
+    const onToggle = jest.fn();
+
+    const { getByText } = render(
+      withAppContext(
+        <CheckboxList
+          name="status"
+          hasToggle
+          options={statuses}
+          onToggle={onToggle}
+          toggleAllLabel={toggleAllLabel}
+        />
+      )
+    );
+
+    expect(onToggle).not.toHaveBeenCalled();
+
+    act(() => {
+      fireEvent.click(getByText(toggleAllLabel));
+    });
+
+    await wait();
+
+    expect(onToggle).toHaveBeenCalled();
   });
 });
